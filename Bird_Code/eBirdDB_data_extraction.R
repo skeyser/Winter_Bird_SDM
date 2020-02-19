@@ -17,18 +17,6 @@ dbListTables(con.ebird)
 #Check the fields in the DB
 sp <- dbListFields(con.ebird, "checklists")[232:630]
 
-#Wrtie a small query to look at the data 
-q1 <- "SELECT Ammospiza_leconteii, LATITUDE, LONGITUDE,
-MONTH, DAY, TIME, YEAR FROM checklists WHERE YEAR = 2010 
-AND Ammospiza_leconteii = 1 LIMIT 5"
-
-q2 <- "SELECT * FROM checklists LIMIT 5"
-
-q3 <- "SELECT LATITUDE, LONGITUDE WHERE DAY >= 15 & DAY <= 45 FROM checklists"
-
-leconts <- dbGetQuery(con.ebird, q1)
-peek <- dbGetQuery(con.ebird, q2)
-
 #Pull out a list of all the species and save as csv to subset DB
 #Load in CSV with most prevalent species 
 species.list <- read.csv(here::here("Bird_Data/ERD2018_DATA_400_SPECIES_Lat25to50_Lng-100to-65.db.csv"))
@@ -59,17 +47,6 @@ var_list <- c("SAMPLING_EVENT_ID",
 #                        lon.max = -66.9850159,
 #                        lat.min = 18.924589,
 #                        lat.max = 70.284249)
-# 
-# SPATIAL_EXTENT_LIST <- list(type="rectangle",
-#                             lon.min = -100,
-#                             lon.max = -65,
-#                             lat.min = 35,
-#                             lat.max = 50)
-# spatial_extent <- list(type = "rectangle",
-#                        lon.min = -16,
-#                        lon.max = -66.5,
-#                        lat.min = 18.5,
-#                        lat.max = 70.5)
                        
 #Filter data for extracting prtevalent winter species
 winter.sql <- tbl(con.ebird, "checklists") %>% 
@@ -118,6 +95,7 @@ dat$state <- over(dat, state_map)$STATE_NAME
 #Pull coordinates from dat that occur inside the US
 dat2 <- dat[state_map,]
 dat2.df <- as_tibble(dat2)
+
 #Check out the points remaining 
 plot(state_map)
 points(dat2, pch = 8, col = "red")
