@@ -47,7 +47,7 @@ var_list <- c("SAMPLING_EVENT_ID",
 #                        lon.max = -66.9850159,
 #                        lat.min = 18.924589,
 #                        lat.max = 70.284249)
-                       
+
 #Filter data for extracting prtevalent winter species
 winter.sql <- tbl(con.ebird, "checklists") %>% 
   # filter(LATITUDE >= SPATIAL_EXTENT_LIST$lat.min &
@@ -55,7 +55,7 @@ winter.sql <- tbl(con.ebird, "checklists") %>%
   #          LONGITUDE >= SPATIAL_EXTENT_LIST$lon.min &
   #          LONGITUDE <= SPATIAL_EXTENT_LIST$lon.max) %>%
   filter(YEAR >= 2004 & YEAR <= 2018) %>%
-  filter(DAY >= 15 & DAY <= 45) %>% #change for months, jan=1-31, jun=152-181
+  filter(DAY >= 335 & DAY <= 365 | Day >= 1 & DAY <= 59) %>% #change for months, jan=1-31, jun=152-181
   filter(PRIMARY_CHECKLIST_FLAG == 1) %>%
   filter(I_TRAVELING == 1 | I_STATIONARY == 1) %>%
   filter(EFFORT_HRS <= 3 & EFFORT_HRS > 0) %>%
@@ -76,8 +76,10 @@ state_map <- readShapeSpatial("E:/eBird/US_Map/states.shp", proj4string = unproj
 #Remove AK and HI
 state_map <- state_map[state_map$STATE_NAME != "Alaska" & state_map$STATE_NAME != "Hawaii", ]
 
+#wa <- state_map[state_map$STATE_NAME == "Washington", ]
+
 #Pull out the coordinates for the ebird data
-dat <- winter.bird %>% dplyr::select(LONGITUDE, LATITUDE)
+dat <- winter.bird %>% dplyr::select(LONGITUDE, LATITUDE, YEAR, DAY, SAMPLING_EVENT_ID)
 
 #Use "coordinates" to create a spatial class for lat/lon of ebird data 
 coordinates(dat) <- c("LONGITUDE", "LATITUDE")
@@ -89,6 +91,8 @@ proj4string(dat) <- proj4string(state_map)
 inside.us <- !is.na(over(dat, state_map))
 glimpse(inside.us)
 
+#inside.wa <- !is.na(over(dat, wa))
+
 #Keeps Name of State for the overlaid eBird points
 dat$state <- over(dat, state_map)$STATE_NAME
 
@@ -96,23 +100,31 @@ dat$state <- over(dat, state_map)$STATE_NAME
 dat2 <- dat[state_map,]
 dat2.df <- as_tibble(dat2)
 
+#dat.wa <- dat[wa, ]
+#dat.wa.df <- as_tibble(dat.wa)
+
 #Check out the points remaining 
-plot(state_map)
-points(dat2, pch = 8, col = "red")
 
-max.lat <- max(dat2.df$LATITUDE)
-min.lat <- min(dat2.df$LATITUDE)
-max.lon <- max(dat2.df$LONGITUDE)
-min.lon <- min(dat2.df$LONGITUDE)
+#plot(wa)
+#points(dat.wa, pch = 8, col = "red")
+#plot(state_map)
+#points(dat2, pch = 8, col = "red")
 
-rm("dat", "dat2", "leconts", "peek", "inside.us", "dat2.df")
+#Extract latitude bounding boxes for dat2
+#Extraneous step since I have restricted to the extent of the US
+#max.lat <- max(dat2.df$LATITUDE)
+# min.lat <- min(dat2.df$LATITUDE)
+# max.lon <- max(dat2.df$LONGITUDE)
+# min.lon <- min(dat2.df$LONGITUDE)
+
+#rm("dat", "dat2", "leconts", "peek", "inside.us", "dat2.df")
 
 #Merge the datasets to get filtered eBird checklists
-winter.bio <- winter.bird %>% filter(LATITUDE <= max.lat &
-                                       LATITUDE >= min.lat &
-                                       LONGITUDE <= max.lon &
-                                       LONGITUDE >= min.lon)
+# winter.bio <- winter.bird %>% filter(LATITUDE <= max.lat &
+#                                        LATITUDE >= min.lat &
+#                                        LONGITUDE <= max.lon &
+#                                        LONGITUDE >= min.lon)
 
-#write.csv(winter.bio, file = here::here("Bird_Data/Jan_Feb_US_Bird_400.csv"))
+write.csv(dat2.df, file = "E:eBird/WinterBirdData/eBird_Winter_data.csv")
 
 RSQLite::dbDisconnect(con.ebird)
